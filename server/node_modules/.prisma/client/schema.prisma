@@ -1,0 +1,50 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Message {
+  id        Int       @id @default(autoincrement())
+  roomId    Int?      @map("room_id")
+  senderId  Int?      @map("sender_id")
+  message   String?   @db.Text
+  timestamp DateTime? @db.DateTime(0)
+  room      Room?    @relation(fields: [roomId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "Messages_ibfk_1")
+  sender    User?    @relation(fields: [senderId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "Messages_ibfk_2")
+
+  @@index([roomId], name: "room_id")
+  @@index([senderId], name: "sender_id")
+}
+
+model Room_Participant {
+  roomId Int
+  userId Int
+  room   Room @relation(fields: [roomId], references: [id], onUpdate: NoAction, map: "Room_Participants_ibfk_1")
+  user   User @relation(fields: [userId], references: [id], onUpdate: NoAction, map: "Room_Participants_ibfk_2")
+
+  @@id([roomId, userId])
+  @@index([userId], name: "user_id")
+}
+
+model Room {
+  id                Int                 @id @default(autoincrement())
+  isGroup          Boolean?             @map("is_group")
+  messages         Message[]
+  roomParticipants Room_Participant[]
+
+  @@map("Rooms")
+}
+
+model User {
+  id                Int                 @id @default(autoincrement())
+  username          String              @unique(map: "username") @db.VarChar(255)
+  passwordHash      String              @map("password_hash") @db.VarChar(255)
+  messages          Message[]
+  roomParticipants  Room_Participant[]
+
+  @@map("Users")
+}
